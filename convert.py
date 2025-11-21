@@ -15,8 +15,8 @@ import pandas as pd
 # file.X = [window x sample]
 # file.y = [window x 1]
 
-datasetPath = './datasets/.mat'
-savePath = './datasets/.npz'
+datasetPath = './datasets/mat'
+savePath = './datasets/npz'
 
 visual = False
 
@@ -28,6 +28,9 @@ if not os.path.exists(datasetPath):
     sys.exit(1)
 
 for file in os.listdir(datasetPath):
+    if not file.lower().endswith(".mat"):
+        continue
+    
     fullpath = os.path.join(datasetPath, file)
     data = loadmat(fullpath)
     filename = file.split('.')[0] #filename.mat -> [filename,mat]

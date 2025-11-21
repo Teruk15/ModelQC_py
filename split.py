@@ -10,8 +10,8 @@ import numpy as np
 import os
 import sys
 
-dataPath = './datasets/.npz/data.npz'
-savePath = './datasets/.npz'
+dataPath = './datasets/npz/data.npz'
+savePath = './datasets/npz'
 
 # Load data
 if not os.path.exists(dataPath):

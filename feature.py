@@ -6,8 +6,8 @@ import numpy as np
 # X_ = [n_window x n_sample]
 # y_ = [n_window x 1]
 
-dataPath = './datasets/.npz/data_split.npz'
-savePath = './datasets/.npz'
+dataPath = './datasets/npz/data_split.npz'
+savePath = './datasets/npz'
 
 # Load data
 if not os.path.exists(dataPath):

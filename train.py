@@ -6,7 +6,7 @@ import sys
 import json
 import joblib
 
-dataPath = './datasets/.npz/data_feature.npz'
+dataPath = './datasets/npz/data_feature.npz'
 paramPath = './model/hyperparameter.json'
 savePath = './model'
 

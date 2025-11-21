@@ -7,7 +7,7 @@ import os
 import sys
 import json
 
-dataPath = './datasets/.npz/data_feature.npz'
+dataPath = './datasets/npz/data_feature.npz'
 savePath = './model'
 
 # Load data
