@@ -17,12 +17,7 @@ if not os.path.exists(dataPath):
 data = np.load(dataPath)
 
 X_train = data['X_train']
-X_val = data['X_val']
 X_test = data['X_test']
-
-y_train = data['y_train']
-y_val = data['y_val']
-y_test = data['y_test']
 
 # Transform X_ into features
 def transform(X):
@@ -57,12 +52,10 @@ def extract_features(window):
         var_val,
         slope,
         p2p,
-        kurt,
         max_deriv
     ])
 
 X_train_feat = transform(X_train)
-X_val_feat   = transform(X_val)
 X_test_feat  = transform(X_test)
 
 # Save
@@ -71,10 +64,19 @@ if not os.path.exists(savePath):
     sys.exit(1)
 
 saveFilePath = os.path.join(savePath, 'data_feature')
+
 np.savez_compressed(saveFilePath,
                     X_train=X_train_feat,
-                    X_val=X_val_feat,
-                    X_test=X_test_feat,
-                    y_train=y_train,
-                    y_val=y_val,
-                    y_test=y_test)
+                    X_test=X_test_feat)
+
+# y_train = data['y_train']
+# y_val = data['y_val']
+# y_test = data['y_test']
+
+# np.savez_compressed(saveFilePath,
+#                     X_train=X_train_feat,
+#                     X_val=X_val_feat,
+#                     X_test=X_test_feat,
+#                     y_train=y_train,
+#                     y_val=y_val,
+#                     y_test=y_test)
