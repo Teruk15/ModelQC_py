@@ -31,7 +31,7 @@ def extract_features(window):
     mean_val = np.mean(window)
 
     # 2. Variance
-    var_val = np.var(window)
+    var_val = np.log(np.var(window))
 
     # 3. Linear trend slope (simple least squares)
     t = np.arange(len(window))
@@ -45,14 +45,13 @@ def extract_features(window):
 
     # 6. Max derivative (detect pops)
     dx = np.abs(np.diff(window))
-    max_deriv = np.max(dx)
+    max_deriv = np.log(np.max(dx))
 
     return np.array([
         mean_val,
         var_val,
         slope,
-        p2p,
-        max_deriv
+        max_deriv,
     ])
 
 X_train_feat = transform(X_train)

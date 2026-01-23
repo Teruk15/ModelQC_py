@@ -39,7 +39,8 @@ diff_train = X_train - mu
 d2_train = np.sum(diff_train @ Sigma_inv * diff_train, axis=1)
 
 # 4. Choose threshold as a percentile of train distances
-percentile = 97.5
+# Change here for less strict 
+percentile = 99.5
 threshold = np.percentile(d2_train, percentile)
 
 print(f"Chosen threshold (sq. Mahalanobis) at {percentile}th percentile: {threshold:.4f}")
