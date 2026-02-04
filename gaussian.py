@@ -27,7 +27,7 @@ if X_train.shape[0] < 10:
 mu = X_train.mean(axis=0)             # shape (n_feat,)
 Sigma = np.cov(X_train, rowvar=False) # shape (n_feat, n_feat)
 
-# (Optional) regularize covariance if near-singular
+# Regularize covariance if near-singular
 eps = 1e-6
 Sigma_reg = Sigma + eps * np.eye(Sigma.shape[0])
 
@@ -39,13 +39,13 @@ diff_train = X_train - mu
 d2_train = np.sum(diff_train @ Sigma_inv * diff_train, axis=1)
 
 # 4. Choose threshold as a percentile of train distances
-# Change here for less strict 
-percentile = 99.5
+# Lower the threshold, more likely to detect noise 
+percentile = 97.5
 threshold = np.percentile(d2_train, percentile)
 
 print(f"Chosen threshold (sq. Mahalanobis) at {percentile}th percentile: {threshold:.4f}")
 
-# 5. (Optional) sanity check on X_test
+# 5. Sanity check on X_test
 diff_test = X_test - mu
 d2_test = np.sum(diff_test @ Sigma_inv * diff_test, axis=1)
 y_pred_test = (d2_test > threshold).astype(int)  # 1 = flagged as bad

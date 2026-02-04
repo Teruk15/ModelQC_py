@@ -50,8 +50,7 @@ def extract_features(window):
     return np.array([
         mean_val,
         var_val,
-        slope,
-        max_deriv,
+        slope
     ])
 
 X_train_feat = transform(X_train)
