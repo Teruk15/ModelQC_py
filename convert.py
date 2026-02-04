@@ -24,9 +24,9 @@ def main():
 
     Xs = []  # All x
     ys = []  # All y
-    windowSizes = []  # N_window tracker
+    window_sizes = []  # N_window tracker
 
-    windowLength = 4800
+    window_length = 4800
 
     # Directory check
     if not os.path.exists(datasetPath):
@@ -47,24 +47,24 @@ def main():
         y = y.reshape(-1)  # 2D -> 1D
 
         # Convert to [N_window, N_window_sample]
-        X, y = windowResize(X, y, windowLength)
+        X, y = windowResize(X, y, window_length)
 
         # Track each patient window sample count to handle patient imbalance later
-        windowSizes.append(y.shape[0])
+        window_sizes.append(y.shape[0])
 
         Xs.append(X)
         ys.append(y)
 
-    windowLimit = min(windowSizes)  # This can be a constant as well (e.g. 1000)
+    window_limit = min(window_sizes)  # This can be a constant as well (e.g. 1000)
 
     # Handle patient-imbalance (cap to minimum window size)
-    for i, windowSize in enumerate(windowSizes):
+    for i, window_size in enumerate(window_sizes):
 
-        if windowSize <= windowLimit:
+        if window_size <= window_limit:
             continue  # or keep all windows
         
         # Random index pick
-        idxs = np.random.choice(windowSize, size=windowLimit, replace=False)
+        idxs = np.random.choice(window_size, size=window_limit, replace=False)
 
         Xs[i] = Xs[i][idxs, :]
         ys[i] = ys[i][idxs]
@@ -89,17 +89,17 @@ def main():
     print(f'Saved as {saveFilePath}.npz')
 
 
-def windowResize(X: np.ndarray, y: np.ndarray, windowLength):
+def windowResize(X: np.ndarray, y: np.ndarray, window_length):
     # C = N_channel
     # N = N_sample
     # W = N_window_per_channel
 
     C, N = X.shape
-    W = math.floor(N / windowLength)
+    W = math.floor(N / window_length)
 
-    X = X[:, 0 : W * windowLength]  # Permute only required X
+    X = X[:, 0 : W * window_length]  # Permute only required X
 
-    Xw = X.reshape(C, W, windowLength)
+    Xw = X.reshape(C, W, window_length)
 
     X_resized = Xw.reshape(-1, Xw.shape[2])  # 2D: [N_window, N_window_sample]
 
@@ -108,28 +108,28 @@ def windowResize(X: np.ndarray, y: np.ndarray, windowLength):
     return X_resized, y_resized
 
 def frequencyAnalysis(X_all: np.ndarray, y_all: np.ndarray, label: bool, fs):
-    idxAll = np.where(y_all == label)[0]
-    randIdx = np.random.choice(idxAll, size=1, replace=False)
+    idx_all = np.where(y_all == label)[0]
+    rand_idx = np.random.choice(idx_all, size=1, replace=False)
     
     f_max = 500 # Change as needed
     
-    X = X_all[randIdx, :]
+    X = X_all[rand_idx, :]
     
     N = X.shape[1]
     
     Xf = np.fft.rfft(X, axis=1)  # Compute fft
     
-    Xmag = np.abs(Xf) / N
+    X_mag = np.abs(Xf) / N
     freqs = np.fft.rfftfreq(N, d=1/fs)
-    XmagMean = Xmag.mean(axis=0)
+    X_mag_mean = X_mag.mean(axis=0)
     
     mask = freqs <= f_max
     
     freqs_cut = freqs[mask]
-    XmagMean_cut = XmagMean[mask]
+    X_mag_mean_cut = X_mag_mean[mask]
     
     plt.figure()
-    plt.plot(freqs_cut, XmagMean_cut)
+    plt.plot(freqs_cut, X_mag_mean_cut)
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Amplitude')
     plt.title(f'FFT Magnitude Spectrum for label == {"noisy" if label else "clean"}')
