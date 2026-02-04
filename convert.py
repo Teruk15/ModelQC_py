@@ -21,9 +21,15 @@ import matplotlib.pyplot as plt
 def main():
     datasetPath = "./datasets/mat"
     savePath = "./datasets/npz"
+    
+    test_file = "data000.mat"
 
     Xs = []  # All x
     ys = []  # All y
+    
+    X_test = None # Reserved patient data, X
+    y_test = None # Reserved patient label, y
+    
     window_sizes = []  # N_window tracker
 
     window_length = 4800
@@ -46,8 +52,14 @@ def main():
         y: np.ndarray = data[varname]["y"][0, 0]  # Accessing y (label)
         y = y.reshape(-1)  # 2D -> 1D
 
-        # Convert to [N_window, N_window_sample]
+        # Conversion: X -> [N_window, N_window_sample], y -> [N_window,1]
         X, y = windowResize(X, y, window_length)
+        
+        # If this is test set save in different memory
+        if file == test_file:
+            X_test = X
+            y_test = y
+            continue
 
         # Track each patient window sample count to handle patient imbalance later
         window_sizes.append(y.shape[0])
@@ -84,7 +96,13 @@ def main():
         sys.exit(1)
         
     saveFilePath = os.path.join(savePath, 'data')
-    np.savez_compressed(saveFilePath, X=X_all, y=y_all)
+    np.savez_compressed(saveFilePath, X=X_all, y=y_all, X_test=X_test, y_test=y_test)
+    
+    print(f'Number of patient (training): {len(window_sizes)},\n\
+            X-size: {X_all.shape},\n\
+            y-size: {y_all.shape},\n\
+            X-test: {X_test.shape},\n\
+            y-test: {y_test.shape}')
     
     print(f'Saved as {saveFilePath}.npz')
 
