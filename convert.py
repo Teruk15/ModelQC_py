@@ -9,10 +9,7 @@ from scipy.io import loadmat
 import os
 import sys
 import math
-import random
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
 
 # Expected .mat structure
 # DATA.X = [channel x sample]
@@ -22,7 +19,7 @@ def main():
     datasetPath = "./datasets/mat"
     savePath = "./datasets/npz"
     
-    test_file = "data000.mat"
+    test_file = "data001.mat"
 
     Xs = []  # All x
     ys = []  # All y
@@ -46,6 +43,7 @@ def main():
 
         fullpath = os.path.join(datasetPath, file)
         data = loadmat(fullpath)
+        print(f'Loading {fullpath}...')
         varname = "DATA"
 
         X: np.ndarray = data[varname]["X"][0, 0]
@@ -84,11 +82,15 @@ def main():
     X_all = np.vstack(Xs) 
     y_all = np.concatenate(ys)
     
-    # Running FFT analysis (True == noisy, False = clean)
-    # fs = 4800
-    # for i in range(5):
-    #     frequencyAnalysis(X_all, y_all, False, fs)
-    #     plt.close()
+    print(X_all.shape, y_all.shape)
+    
+    mask_true  = (y_all == True)
+    mask_false = (y_all == False)
+    mask_other = ~(mask_true | mask_false)
+
+    print("True:", mask_true.sum(), "False:", mask_false.sum(), "Other:", mask_other.sum())
+    print("Other unique values:", np.unique(y_all[mask_other]))
+    print("Other indices:", np.where(mask_other)[0][:20])
     
     # Saving as .npz file
     if not os.path.exists(savePath):
@@ -124,35 +126,6 @@ def windowResize(X: np.ndarray, y: np.ndarray, window_length):
     y_resized = y.repeat(W)  # 1D: [N_window, 1]
 
     return X_resized, y_resized
-
-def frequencyAnalysis(X_all: np.ndarray, y_all: np.ndarray, label: bool, fs):
-    idx_all = np.where(y_all == label)[0]
-    rand_idx = np.random.choice(idx_all, size=1, replace=False)
-    
-    f_max = 500 # Change as needed
-    
-    X = X_all[rand_idx, :]
-    
-    N = X.shape[1]
-    
-    Xf = np.fft.rfft(X, axis=1)  # Compute fft
-    
-    X_mag = np.abs(Xf) / N
-    freqs = np.fft.rfftfreq(N, d=1/fs)
-    X_mag_mean = X_mag.mean(axis=0)
-    
-    mask = freqs <= f_max
-    
-    freqs_cut = freqs[mask]
-    X_mag_mean_cut = X_mag_mean[mask]
-    
-    plt.figure()
-    plt.plot(freqs_cut, X_mag_mean_cut)
-    plt.xlabel('Frequency (Hz)')
-    plt.ylabel('Amplitude')
-    plt.title(f'FFT Magnitude Spectrum for label == {"noisy" if label else "clean"}')
-    plt.grid(True)
-    plt.show()
     
 
 if __name__ == "__main__":
