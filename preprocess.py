@@ -34,16 +34,16 @@ def main():
     X_test = X_test / (X_test.std(axis=1, keepdims=True) + 1e-8)
     
     # Running FFT analysis for debugging (True == noisy, False = clean)
-    fs = 4800
-    frequencyAnalysis(X, y, False, fs)
-    frequencyAnalysis(X, y, True, fs)
+    ds_factor = 6
+    fs = 4800 /ds_factor
+    # frequencyAnalysis(X, y, False, fs)
+    # frequencyAnalysis(X, y, True, fs)
     
     Bands = [
         [1, 10],     # slow drift / instability (but excludes DC)
         [55, 65],    # line noise around 60 Hz (very discriminative)
         [150, 250],  # high-frequency junk / broadband noise floor
     ]
-    fs = 4800
     F = len(Bands)
     
     # Assumption of X's shape: [L, W]

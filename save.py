@@ -21,7 +21,7 @@ def main():
     N = 1
     C = 1
     H = 3
-    W = 4800
+    W = 800
 
     # make a dummy input with the SAME shape you use in inference
     dummy_input = torch.zeros(N, C, H, W)

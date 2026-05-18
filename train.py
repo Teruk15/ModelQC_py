@@ -30,8 +30,8 @@ def main():
         sys.exit(1)
 
     data = np.load(dataPath)
-    X: np.ndarray = data["X"]
-    y: np.ndarray = data["y"]
+    X: np.ndarray = data["X"] # [F, W, L]
+    y: np.ndarray = data["y"] # [L, 1]
     
     # SANITY CHECK
     # y = np.random.permutation(y)
@@ -64,11 +64,11 @@ def main():
         for xb, yb in train_loader:
             xb, yb = xb.to(device), yb.to(device)
 
-            optimizer.zero_grad()
-            logits = model(xb)
-            loss = criterion(logits, yb)
-            loss.backward()
-            optimizer.step()
+            optimizer.zero_grad() # Reset gradient from previous
+            logits = model(xb) # Obtain model prediction
+            loss = criterion(logits, yb) # Calculate the loss
+            loss.backward() # Calculate new weight (backpropagation)
+            optimizer.step() # Updates new weight (backpropagation)
 
             # TRAINING PREDICTIONS
             pred = logits.argmax(dim=1)
@@ -90,7 +90,6 @@ def main():
                 
                 val_y_counts += torch.bincount(yb, minlength=2).cpu()
                 val_pred_counts += torch.bincount(pred, minlength=2).cpu()
-                # break
             
                 correct += (pred == yb).sum().item()
                 total += yb.numel()
@@ -125,17 +124,21 @@ def prepareLoader(X: np.ndarray, y: np.ndarray, batch_size):
     _, _, total_window = X.shape
     
     # Pytorch expects input of (N, C, W, H)
-    # X -> [w_total, f_bands, w_sample]
-    # y -> [w_total, 1]
+    #   N: Batch size - number of 'image' processing at once 
+    #   C: Channel    - depth of the 'image'
+    #   W: Width      - width of the 'image'
+    #   H: Height     - heigh of the 'image'
+    
+    # Original Input size to Expected dimension
+    #   X: [F, W, L] -> [N = L, C = 1, H = F, W = W]       
+    #   y: [L, 1]    -> [L] (1D)
+
     X_torch = torch.tensor(X, dtype=torch.float32).permute(2, 0, 1).unsqueeze(1)  
     y_torch = torch.tensor(y, dtype=torch.long).view(-1)
     
-    # print(type(X_torch))
+    idx = np.arange(total_window) # L
     
-    idx = np.arange(total_window) # [0,1,...,total_window-1]
-    
-    # Be aware that test set comes from the outside of the training set
-    # (to handle cross-patient bias)
+    # Generate INDEX for training and validation
     train_idx, val_idx = train_test_split(
         idx, 
         test_size=0.2, 
@@ -148,7 +151,10 @@ def prepareLoader(X: np.ndarray, y: np.ndarray, batch_size):
     X_val,   y_val   = X_torch[val_idx],   y_torch[val_idx]
     
     # Compute weights to handle imbalance
-    counts = torch.bincount(y_train)
+    #   counts  = [# of 0s, # of 1s]
+    #   weights = [proportion of 0s, proportions of 1s]
+    
+    counts = torch.bincount(y_train) 
     weights = (counts.sum() / counts).float()
     weights = weights / weights.sum() * len(counts)
 

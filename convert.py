@@ -30,6 +30,7 @@ def main():
     window_sizes = []  # N_window tracker
 
     window_length = 4800
+    ds_factor = 6
 
     # Directory check
     if not os.path.exists(datasetPath):
@@ -51,7 +52,7 @@ def main():
         y = y.reshape(-1)  # 2D -> 1D
 
         # Conversion: X -> [N_window, N_window_sample], y -> [N_window,1]
-        X, y = windowResize(X, y, window_length)
+        X, y = windowResize(X, y, window_length, ds_factor)
         
         # If this is test set save in different memory
         if file == test_file:
@@ -109,21 +110,46 @@ def main():
     print(f'Saved as {saveFilePath}.npz')
 
 
-def windowResize(X: np.ndarray, y: np.ndarray, window_length):
-    # C = N_channel
-    # N = N_sample
-    # W = N_window_per_channel
+# def windowResize(X: np.ndarray, y: np.ndarray, window_length, ds_factor):
+#     # C = N_channel
+#     # N = N_sample
+#     # W = N_window_per_channel
+
+#     C, N = X.shape
+#     W = math.floor(N / window_length)
+
+#     X = X[:, 0 : W * window_length]  # Permute only required X
+
+#     Xw = X.reshape(C, W, window_length)
+
+#     X_resized = Xw.reshape(-1, Xw.shape[2])  # 2D: [N_window, N_window_sample]
+
+#     y_resized = y.repeat(W)  # 1D: [N_window, 1]
+
+#     return X_resized, y_resized
+
+def windowResize(X: np.ndarray, y: np.ndarray, window_length, ds_factor):
+    """
+    window_length: samples per 1 second at ORIGINAL fs (4800)
+    ds_factor: downsample factor
+    """
+
+    # Downsample in time
+    if ds_factor > 1:
+        X = X[:, ::ds_factor]
+
+    # After downsampling, 1-second window has fewer samples
+    # (requires window_length divisible by ds_factor)
+    effective_window_length = window_length // ds_factor
 
     C, N = X.shape
-    W = math.floor(N / window_length)
+    W = N // effective_window_length
 
-    X = X[:, 0 : W * window_length]  # Permute only required X
+    X = X[:, 0 : W * effective_window_length]
+    Xw = X.reshape(C, W, effective_window_length)
 
-    Xw = X.reshape(C, W, window_length)
-
-    X_resized = Xw.reshape(-1, Xw.shape[2])  # 2D: [N_window, N_window_sample]
-
-    y_resized = y.repeat(W)  # 1D: [N_window, 1]
+    X_resized = Xw.reshape(-1, effective_window_length)  # [N_windows_total, samples_per_1sec]
+    y_resized = y.repeat(W)
 
     return X_resized, y_resized
     
