@@ -8,7 +8,6 @@ Quick Description (revised later):
 from scipy.io import loadmat
 import os
 import sys
-import math
 import numpy as np
 
 # Expected .mat structure
@@ -19,26 +18,30 @@ def main():
     datasetPath = "./datasets/mat"
     savePath = "./datasets/npz"
     
-    test_file = "data001.mat"
+    inference_file = ""
 
     Xs = []  # All x
     ys = []  # All y
     
-    X_test = None # Reserved patient data, X
-    y_test = None # Reserved patient label, y
+    X_inference = None # Reserved patient data, X
+    y_inference = None # Reserved patient label, y
     
-    window_sizes = []  # N_window tracker
+    patient_ids = [] # All patients ids
 
-    window_length = 4800
-    ds_factor = 6
+    fs = 4800
+    ds = 4
+    
+    window_length = round(fs/ds)
 
+    num_patient = 0
+    
     # Directory check
     if not os.path.exists(datasetPath):
         print(f"{datasetPath} does not exist")
         sys.exit(1)
 
     # Extract .mat files
-    for file in os.listdir(datasetPath):
+    for idx, file in enumerate(os.listdir(datasetPath)):
         if not file.lower().endswith(".mat"):
             continue
 
@@ -52,34 +55,25 @@ def main():
         y = y.reshape(-1)  # 2D -> 1D
 
         # Conversion: X -> [N_window, N_window_sample], y -> [N_window,1]
-        X, y = windowResize(X, y, window_length, ds_factor)
+        X, y = windowResize(X, y, window_length)
         
-        # If this is test set save in different memory
-        if file == test_file:
-            X_test = X
-            y_test = y
+        # Create an array of IDs where len = N_window (e.g. [2,2,2,...2])
+        p_id = np.full(y.shape[0], idx)
+        
+        # If this is for inference, save in different memory
+        if file == inference_file:
+            X_inference = X
+            y_inference = y
             continue
-
-        # Track each patient window sample count to handle patient imbalance later
-        window_sizes.append(y.shape[0])
 
         Xs.append(X)
         ys.append(y)
-
-    window_limit = min(window_sizes)  # This can be a constant as well (e.g. 1000)
-
-    # Handle patient-imbalance (cap to minimum window size)
-    for i, window_size in enumerate(window_sizes):
-
-        if window_size <= window_limit:
-            continue  # or keep all windows
+        patient_ids.append(p_id)
         
-        # Random index pick
-        idxs = np.random.choice(window_size, size=window_limit, replace=False)
-
-        Xs[i] = Xs[i][idxs, :]
-        ys[i] = ys[i][idxs]
+        num_patient += 1
     
+    
+    # Display X,y information 
     X_all = np.vstack(Xs) 
     y_all = np.concatenate(ys)
     
@@ -87,11 +81,18 @@ def main():
     
     mask_true  = (y_all == True)
     mask_false = (y_all == False)
-    mask_other = ~(mask_true | mask_false)
+    mask_other = ~(mask_true | mask_false) # Sanity check (should not happen)
 
     print("True:", mask_true.sum(), "False:", mask_false.sum(), "Other:", mask_other.sum())
     print("Other unique values:", np.unique(y_all[mask_other]))
     print("Other indices:", np.where(mask_other)[0][:20])
+    
+    print(f'Number of patient: {num_patient},\n\
+            X-size: {X_all.shape},\n\
+            y-size: {y_all.shape},\n\
+            X-test: {X_inference.shape},\n\
+            y-test: {y_inference.shape}')
+    
     
     # Saving as .npz file
     if not os.path.exists(savePath):
@@ -99,13 +100,7 @@ def main():
         sys.exit(1)
         
     saveFilePath = os.path.join(savePath, 'data')
-    np.savez_compressed(saveFilePath, X=X_all, y=y_all, X_test=X_test, y_test=y_test)
-    
-    print(f'Number of patient (training): {len(window_sizes)},\n\
-            X-size: {X_all.shape},\n\
-            y-size: {y_all.shape},\n\
-            X-test: {X_test.shape},\n\
-            y-test: {y_test.shape}')
+    np.savez_compressed(saveFilePath, X=X_all, y=y_all, X_inference=X_inference, y_inference=y_inference)
     
     print(f'Saved as {saveFilePath}.npz')
 
@@ -128,27 +123,18 @@ def main():
 
 #     return X_resized, y_resized
 
-def windowResize(X: np.ndarray, y: np.ndarray, window_length, ds_factor):
+def windowResize(X: np.ndarray, y: np.ndarray, window_length):
     """
-    window_length: samples per 1 second at ORIGINAL fs (4800)
-    ds_factor: downsample factor
+    window_length: samples per 1 second at DOWNSAMPLE RATE (e.g. 1200)
     """
-
-    # Downsample in time
-    if ds_factor > 1:
-        X = X[:, ::ds_factor]
-
-    # After downsampling, 1-second window has fewer samples
-    # (requires window_length divisible by ds_factor)
-    effective_window_length = window_length // ds_factor
 
     C, N = X.shape
-    W = N // effective_window_length
+    W = N // window_length
 
-    X = X[:, 0 : W * effective_window_length]
-    Xw = X.reshape(C, W, effective_window_length)
+    X = X[:, 0 : W * window_length]
+    Xw = X.reshape(C, W, window_length)
 
-    X_resized = Xw.reshape(-1, effective_window_length)  # [N_windows_total, samples_per_1sec]
+    X_resized = Xw.reshape(-1, window_length)  # [N_windows_total, samples_per_1sec]
     y_resized = y.repeat(W)
 
     return X_resized, y_resized
